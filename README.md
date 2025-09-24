@@ -59,7 +59,10 @@ python local-clearlogo.py --all
 - `-v`, `--verbose` : Enable detailed output.
 - `-a`, `--all` : Upload images for all items (overwrite existing logos).
 - `-d`, `--dry-run` : Preview what would be changed, but make no changes.
-- `-c`, `--clear-mapping` : Clear the current mapping configuration file
+- `-c`, `--clear-mapping` : Clear the current mapping configuration file.
+- `-s`, `--single` : Upload a logo for a single item (movie or show).  
+  Prompts you to search for a specific title, select it, and upload a logo from your local folder. Useful for targeted updates without running the default bulk process.
+- `-m`, `--max-results` : Maximum number of search results in single item mode (default: 30).
 
 ---
 
