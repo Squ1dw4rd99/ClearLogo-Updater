@@ -213,11 +213,12 @@ def main(stats=None):
     if stats is None: # first run
         print("--- Plex Logo Updater (Movies & TV Shows - All Libraries) ---")
         print("\nRunning with options:")
-        print(f" [+] Verbose: {verbose}")
-        print(f" [+] Upload all: {upload_all}")
-        print(f" [+] Single item mode: {single_item}")
-        print(f" [+] Dry run: {dry_run}")
-        print(f" [+] Clear mapping: {clear_mapping}")
+        print(f"  [+] Verbose (-v, --verbose): {verbose}")
+        print(f"  [+] Upload all (-a, --all): {upload_all}")
+        print(f"  [+] Single item mode (-s, --single): {single_item}")
+        print(f"  [+] Dry run (-d, --dry-run): {dry_run}")
+        print(f"  [+] Clear mapping (-c, --clear-mapping): {clear_mapping}")
+        print(f"  [+] Max results (-m, --max-results): {args.max_results}")
 
     if clear_mapping:
         if Path(MAPPING_FILE).exists():
