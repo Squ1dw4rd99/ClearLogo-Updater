@@ -182,18 +182,30 @@ def search_titles(plex, query, max_results=30):
             })
     return results
 
-def select_from_results(results):
-    """Prompt user to select a result from the search list."""
+def select_from_results(results, allow_all=False):
+    """Prompt user to select a result from the search list.
+    If allow_all is True the user may enter 'a' to select/update all results.
+    Returns:
+      - selected item object
+      - 'ALL' string if user chose to operate on all results
+      - None if user quits or invalid
+    """
     if not results:
         print("[!] No results found.")
         return None
     print("\nSearch Results:")
     for idx, r in enumerate(results, 1):
         print(f"{idx}. {r['title']} ({r['year']}) [{r['type']}] - Library: {r['library']}")
+    prompt = f"Select a title (1-{len(results)})"
+    if allow_all:
+        prompt += " | 'a' to update all results"
+    prompt += " | 'q' to quit: "
     while True:
-        choice = input(f"Select a title (1-{len(results)}) or 'q' to quit: ").strip()
-        if choice.lower() == 'q':
+        choice = input(prompt).strip().lower()
+        if choice == 'q':
             return None
+        if allow_all and choice == 'a':
+            return 'ALL'
         if choice.isdigit() and 1 <= int(choice) <= len(results):
             return results[int(choice)-1]['item']
         print("[!] Invalid selection. Try again.")
@@ -280,27 +292,48 @@ def main(stats=None):
         # === SINGLE ITEM MODE ===
         query = input("\nEnter the title to search for: ").strip()
         results = search_titles(plex, query, max_results=args.max_results)
-        if len(results) == 1:
+        if not results:
+            print("[!] No results found for that query.")
+        elif len(results) == 1:
             selected_item = results[0]['item']
             selected_section = next(s for s in plex.library.sections() if s.type == results[0]['type'] and s.title == results[0]['library'])
+            stats["total"] += 1
+            print(f"\nSelected: {selected_item.title} ({getattr(selected_item, 'year', '')})")
+            stats = process_item(selected_item, selected_section, location_map, upload_all, dry_run, verbose, stats)
         else:
-            selected_item = select_from_results(results)
-            selected_section = None
-            if selected_item:
-                # Find section for selected item
+            choice = select_from_results(results, allow_all=True)
+            if choice == 'ALL':
+                # process all search results
+                for r in results:
+                    selected_item = r['item']
+                    try:
+                        selected_section = next(s for s in plex.library.sections() if s.type == r['type'] and s.title == r['library'])
+                    except StopIteration:
+                        if verbose:
+                            print(f"[!] Could not find library section for: {r['title']} ({r['library']})")
+                        continue
+                    stats["total"] += 1
+                    print(f"\nSelected: {selected_item.title} ({getattr(selected_item, 'year', '')})")
+                    stats = process_item(selected_item, selected_section, location_map, upload_all, dry_run, verbose, stats)
+            elif choice is None:
+                print("[!] No item selected.")
+            else:
+                # single selection returned
+                selected_item = choice
+                selected_section = None
                 for r in results:
                     if r['item'] == selected_item:
                         selected_section = next(s for s in plex.library.sections() if s.type == r['type'] and s.title == r['library'])
                         break
-        stats["total"] += 1
-        if selected_item and selected_section:
-            print(f"\nSelected: {selected_item.title} ({getattr(selected_item, 'year', '')})")
-            stats = process_item(selected_item, selected_section, location_map, upload_all, dry_run, verbose, stats)
-        else:
-            print("[!] No item selected.")
+                stats["total"] += 1
+                if selected_item and selected_section:
+                    print(f"\nSelected: {selected_item.title} ({getattr(selected_item, 'year', '')})")
+                    stats = process_item(selected_item, selected_section, location_map, upload_all, dry_run, verbose, stats)
+                else:
+                    print("[!] No item selected.")
 
-        # Prompt if the user wants to upload another logo
-        again = input("Do you want to upload another ClearLogo? (y/n): ").strip().lower()
+        # Prompt if the user wants to update another logo
+        again = input("\nDo you want to update another ClearLogo? (y/n): ").strip().lower()
         if again == "y":
             main(stats)  # Pass stats to next call
         else:
