@@ -54,10 +54,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Plex ClearLogo Updater")
     parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
     parser.add_argument('--all', '-a', action='store_true', help='Upload images for all items (overrides existing logos)')
-    parser.add_argument('--single', '-s', action='store_true', help='Upload image for a single item (overrides existing logos)')
+    parser.add_argument('--search', '-s', action='store_true', help='Search for a title and upload a logo (overrides existing logos)')
     parser.add_argument('--dry-run', '-d', action='store_true', help='Dry run (no changes will be made)')
     parser.add_argument('--clear-mapping', '-c', action='store_true', help=f'Clear the current mapping file ({MAPPING_FILE})')
-    parser.add_argument('--max-results', '-m', type=int, default=30, help='Maximum number of search results in single item mode (default: 30)')
+    parser.add_argument('--max-results', '-m', type=int, default=30, help='Maximum number of search results in search mode (default: 30)')
     return parser.parse_args()
 
 def process_item(item, section, location_map, upload_all, dry_run, verbose, stats):
@@ -161,7 +161,7 @@ def process_item(item, section, location_map, upload_all, dry_run, verbose, stat
             print(f"\n  [!] Error processing item: {item.title} → {e}")
     return stats
 
-# single item search functions
+# search mode functions
 def search_titles(plex, query, max_results=30):
     """Search for titles in all libraries"""
     results = []
@@ -215,10 +215,10 @@ def main(stats=None):
     args = parse_args()
     verbose = args.verbose
     upload_all = args.all
-    single_item = args.single
-    if single_item:
-        upload_all = True  # Always override existing logos in single item mode
-        verbose = True    # Always verbose in single item mode
+    search_mode = args.search
+    if search_mode:
+        upload_all = True  # Always override existing logos in search mode
+        verbose = True    # Always verbose in search mode
     dry_run = args.dry_run
     clear_mapping = args.clear_mapping
 
@@ -227,7 +227,7 @@ def main(stats=None):
         print("\nRunning with options:")
         print(f"  [+] Verbose (-v, --verbose): {verbose}")
         print(f"  [+] Upload all (-a, --all): {upload_all}")
-        print(f"  [+] Single item mode (-s, --single): {single_item}")
+        print(f"  [+] Search mode (-s, --search): {search_mode}")
         print(f"  [+] Dry run (-d, --dry-run): {dry_run}")
         print(f"  [+] Clear mapping (-c, --clear-mapping): {clear_mapping}")
         print(f"  [+] Max results (-m, --max-results): {args.max_results}")
@@ -288,8 +288,8 @@ def main(stats=None):
     # sort the mapping by key length (descending) to match longer paths first
     location_map = dict(sorted(location_map.items(), key=lambda item: len(item[0]), reverse=True))
 
-    if single_item:
-        # === SINGLE ITEM MODE ===
+    if search_mode:
+        # === SEARCH MODE ===
         query = input("\nEnter the title to search for: ").strip()
         results = search_titles(plex, query, max_results=args.max_results)
         if not results:
